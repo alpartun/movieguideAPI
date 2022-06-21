@@ -10,6 +10,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+using Microsoft.EntityFrameworkCore;
+using movieguideAPI.Data;
 
 namespace movieguideAPI
 {
@@ -25,12 +27,32 @@ namespace movieguideAPI
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
+            //injection area
+            services.AddDbContext<DataContext>(
+                x=> 
+                    x.UseSqlServer(
+                        Configuration.GetConnectionString(
+                            "DefaultConnection")));
+
+            services.AddAutoMapper(typeof(Startup));
+            services.AddControllers().AddNewtonsoftJson(opt =>
+            
+                opt.SerializerSettings.ReferenceLoopHandling = Newtonsoft.Json.ReferenceLoopHandling.Ignore
+            );
+            services.AddCors(options =>
+            {
+                options.AddPolicy("CorsPolicy",
+                    builder => builder.AllowAnyOrigin()
+                        .AllowAnyMethod()
+                        .AllowAnyHeader());
+            });
+            services.AddScoped<IAppRepository, AppRepository>();
 
             services.AddControllers();
-            services.AddSwaggerGen(c =>
+/*            services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo { Title = "movieguideAPI", Version = "v1" });
-            });
+            });*/
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -39,9 +61,11 @@ namespace movieguideAPI
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                app.UseSwagger();
-                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "movieguideAPI v1"));
+                /*app.UseSwagger();
+                app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "movieguideAPI v1"));*/
             }
+
+            app.UseCors("CorsPolicy");//Middleway
 
             app.UseRouting();
 
